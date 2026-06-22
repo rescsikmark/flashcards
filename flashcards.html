@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Flashcard – Szókártyák</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.10.0/dist/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --bg2: #f5f5f3;
+      --bg3: #eeecea;
+      --text: #1a1a18;
+      --text2: #6b6b67;
+      --text3: #9e9e99;
+      --border: rgba(0,0,0,0.12);
+      --border2: rgba(0,0,0,0.22);
+      --accent: #4f46e5;
+      --accent-bg: #eef2ff;
+      --accent-text: #3730a3;
+      --success: #16a34a;
+      --success-bg: #dcfce7;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --danger-bg: #fee2e2;
+      --radius: 10px;
+      --radius-lg: 14px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1a;
+        --bg2: #252522;
+        --bg3: #2e2e2b;
+        --text: #f0ede8;
+        --text2: #a8a8a2;
+        --text3: #6e6e68;
+        --border: rgba(255,255,255,0.1);
+        --border2: rgba(255,255,255,0.2);
+        --accent: #818cf8;
+        --accent-bg: #1e1b4b;
+        --accent-text: #c7d2fe;
+        --success: #4ade80;
+        --success-bg: #14532d;
+        --warning: #fbbf24;
+        --danger: #f87171;
+        --danger-bg: #450a0a;
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg3);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 1rem;
+    }
+
+    .app {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      padding: 1.5rem 0 1rem;
+    }
+
+    header h1 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    header p {
+      font-size: 14px;
+      color: var(--text2);
+    }
+
+    .tabs {
+      display: flex;
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 4px;
+      margin-bottom: 1rem;
+      gap: 4px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      color: var(--text2);
+      border-radius: var(--radius);
+      transition: background 0.15s, color 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .tab.active {
+      background: var(--bg3);
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .tab i { font-size: 16px; }
+
+    .section { display: none; }
+    .section.visible { display: block; }
+
+    .card {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--text2);
+      margin-bottom: 6px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 16px;
+      background: var(--bg2);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+
+    .row { display: flex; gap: 8px; margin-top: 8px; }
+    .row input { flex: 1; margin-top: 0; }
+
+    button {
+      padding: 10px 18px;
+      font-size: 14px;
+      cursor: pointer;
+      background: var(--bg2);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+
+    button:hover { background: var(--bg3); }
+    button:active { transform: scale(0.98); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    button.primary:hover { opacity: 0.9; }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .badge-en { background: var(--accent-bg); color: var(--accent-text); }
+    .badge-hu { background: var(--success-bg); color: var(--success); }
+
+    .result-box {
+      background: var(--bg2);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-top: 1rem;
+      display: none;
+    }
+
+    .result-box.visible { display: block; }
+
+    .result-word { font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+    .result-hu { font-size: 17px; color: var(--text2); margin-bottom: 10px; }
+    .result-ex { font-size: 13px; color: var(--text3); font-style: italic; line-height: 1.6; }
+
+    .loading {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      color: var(--text2);
+      font-size: 14px;
+      padding: 1rem 0;
+    }
+
+    .loading.visible { display: flex; }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .err { color: var(--danger); font-size: 13px; margin-top: 8px; display: none; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 1rem;
+    }
+
+    .stat {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.875rem;
+      text-align: center;
+    }
+
+    .stat-n { font-size: 24px; font-weight: 600; }
+    .stat-l { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 10px;
+    }
+
+    .fc-wrap { position: relative; }
+
+    .fc {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      min-height: 120px;
+      transition: border-color 0.15s;
+    }
+
+    .fc:hover { border-color: var(--border2); }
+
+    .fc .front { display: block; }
+    .fc .back { display: none; }
+    .fc.flipped .front { display: none; }
+    .fc.flipped .back { display: block; }
+
+    .fc-word { font-size: 17px; font-weight: 500; margin-bottom: 4px; }
+    .fc-hint { font-size: 12px; color: var(--text3); margin-top: 6px; }
+    .fc-example { font-size: 12px; color: var(--text3); margin-top: 8px; font-style: italic; line-height: 1.5; }
+
+    .fc-del {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: none;
+      border: none;
+      color: var(--text3);
+      cursor: pointer;
+      padding: 4px;
+      font-size: 15px;
+      line-height: 1;
+      border-radius: 6px;
+    }
+
+    .fc-del:hover { color: var(--danger); background: var(--danger-bg); }
+
+    .learned-badge {
+      font-size: 11px;
+      color: var(--success);
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 2.5rem 1rem;
+      color: var(--text3);
+      font-size: 14px;
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+    }
+
+    .empty i { font-size: 32px; display: block; margin-bottom: 0.75rem; }
+
+    .practice-area { max-width: 420px; margin: 0 auto; }
+
+    .practice-card {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem 2rem;
+      text-align: center;
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      margin-bottom: 1rem;
+      transition: border-color 0.15s;
+    }
+
+    .practice-card:hover { border-color: var(--border2); }
+
+    .practice-word { font-size: 30px; font-weight: 600; margin-bottom: 8px; }
+    .practice-sub { font-size: 14px; color: var(--text3); }
+    .practice-progress { font-size: 13px; color: var(--text3); text-align: center; margin-bottom: 1rem; }
+
+    .practice-btns {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .btn-no {
+      color: var(--danger);
+      border-color: var(--danger);
+    }
+
+    .btn-yes {
+      color: var(--success);
+      border-color: var(--success);
+    }
+
+    .done-area {
+      text-align: center;
+      padding: 2rem;
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+    }
+
+    .done-area i { font-size: 44px; color: var(--warning); }
+    .done-area h2 { font-size: 20px; font-weight: 600; margin: 1rem 0 0.5rem; }
+    .done-area p { font-size: 14px; color: var(--text2); margin-bottom: 1.25rem; }
+
+    @media (max-width: 480px) {
+      .tab span { display: none; }
+      .stats { grid-template-columns: repeat(3, 1fr); }
+      .cards-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <h1><i class="ti ti-cards" style="color:var(--accent)"></i> AI Flashcard</h1>
+    <p>Fordíts angol szavakat és tanulj szókártyákkal</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('add')">
+      <i class="ti ti-plus"></i><span>Szó hozzáadása</span>
+    </button>
+    <button class="tab" onclick="switchTab('cards')">
+      <i class="ti ti-cards"></i><span>Kártyáim (<span id="card-count">0</span>)</span>
+    </button>
+    <button class="tab" onclick="switchTab('practice')">
+      <i class="ti ti-brain"></i><span>Gyakorlás</span>
+    </button>
+  </div>
+
+  <div id="tab-add" class="section visible">
+    <div class="card">
+      <label>Angol szó vagy kifejezés</label>
+      <div class="row">
+        <input type="text" id="word-input" placeholder="pl. resilience, ambiguous..." onkeydown="if(event.key==='Enter') translate()" />
+        <button class="primary" onclick="translate()" id="translate-btn">
+          <i class="ti ti-sparkles"></i> Fordítás
+        </button>
+      </div>
+      <div class="err" id="err-msg"></div>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <span>AI fordítás folyamatban...</span>
+    </div>
+
+    <div class="result-box" id="result-box">
+      <span class="badge badge-en">angol</span>
+      <div class="result-word" id="r-word"></div>
+      <span class="badge badge-hu">magyar</span>
+      <div class="result-hu" id="r-hu"></div>
+      <div class="result-ex" id="r-ex"></div>
+      <div class="row" style="margin-top:1rem;">
+        <button class="primary" onclick="addCard()"><i class="ti ti-circle-check"></i> Hozzáadás a kártyáimhoz</button>
+        <button onclick="clearResult()">Mégse</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-cards" class="section">
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-n" id="stat-total">0</div>
+        <div class="stat-l">összes</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="stat-learned" style="color:var(--success)">0</div>
+        <div class="stat-l">megtanult</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="stat-left" style="color:var(--warning)">0</div>
+        <div class="stat-l">tanulandó</div>
+      </div>
+    </div>
+    <div class="cards-grid" id="cards-grid">
+      <div class="empty">
+        <i class="ti ti-cards"></i>
+        Még nincs kártyád. Adj hozzá szavakat!
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-practice" class="section">
+    <div class="practice-area">
+      <div class="empty" id="practice-empty" style="display:none;">
+        <i class="ti ti-brain"></i>
+        Adj hozzá legalább 1 kártyát a gyakorláshoz!
+      </div>
+      <div id="practice-main" style="display:none;">
+        <div class="practice-progress" id="practice-progress"></div>
+        <div class="practice-card" onclick="flipPractice()">
+          <div class="practice-word" id="p-word"></div>
+          <div class="practice-sub" id="p-sub">kattints a fordításért</div>
+        </div>
+        <div class="practice-btns">
+          <button class="btn-no" id="p-no" style="display:none" onclick="markPractice(false)">
+            <i class="ti ti-x"></i> Nem tudtam
+          </button>
+          <button class="btn-yes" id="p-yes" style="display:none" onclick="markPractice(true)">
+            <i class="ti ti-check"></i> Tudtam
+          </button>
+        </div>
+        <div style="text-align:center; margin-top:1.25rem;">
+          <button onclick="resetPractice()" style="font-size:12px; color:var(--text3); border-color:var(--border);">
+            <i class="ti ti-refresh"></i> Újrakezdem
+          </button>
+        </div>
+      </div>
+      <div class="done-area" id="practice-done" style="display:none;">
+        <i class="ti ti-trophy"></i>
+        <h2>Vége a körnek!</h2>
+        <p id="done-summary"></p>
+        <button class="primary" onclick="resetPractice()"><i class="ti ti-refresh"></i> Újra</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let cards = JSON.parse(localStorage.getItem('fc_cards') || '[]');
+  let pending = null;
+  let practiceQueue = [], practiceIndex = 0, practiceFlipped = false;
+  let score = { yes: 0, no: 0 };
+
+  const ANTHROPIC_API_KEY = 'YOUR_API_KEY_HERE';
+
+  function save() {
+    try { localStorage.setItem('fc_cards', JSON.stringify(cards)); } catch(e) {}
+  }
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', ['add','cards','practice'][i] === tab));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+    document.getElementById('tab-' + tab).classList.add('visible');
+    if (tab === 'cards') renderCards();
+    if (tab === 'practice') initPractice();
+  }
+
+  async function translate() {
+    const word = document.getElementById('word-input').value.trim();
+    if (!word) return;
+    const errEl = document.getElementById('err-msg');
+    errEl.style.display = 'none';
+    document.getElementById('result-box').classList.remove('visible');
+    document.getElementById('loading').classList.add('visible');
+    document.getElementById('translate-btn').disabled = true;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 300,
+          messages: [{
+            role: 'user',
+            content: `Fordítsd le ezt az angol szót/kifejezést magyarra, és adj hozzá egy rövid angol példamondatot. Válaszolj CSAK JSON formátumban, semmi más szöveg:
+{"word": "${word}", "translation": "magyar fordítás", "example": "Short example sentence."}
+A fordítás legyen természetes magyar. A példamondat max 12 szó legyen.`
+          }]
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error?.message || 'API hiba: ' + res.status);
+      }
+
+      const data = await res.json();
+      const text = data.content.map(i => i.text || '').join('');
+      const clean = text.replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(clean);
+
+      pending = parsed;
+      document.getElementById('r-word').textContent = parsed.word;
+      document.getElementById('r-hu').textContent = parsed.translation;
+      document.getElementById('r-ex').textContent = '"' + parsed.example + '"';
+      document.getElementById('result-box').classList.add('visible');
+
+    } catch(e) {
+      errEl.textContent = e.message.includes('YOUR_API_KEY') 
+        ? 'API kulcs nincs beállítva! Olvasd el a README.md fájlt.' 
+        : 'Hiba: ' + e.message;
+      errEl.style.display = 'block';
+    }
+
+    document.getElementById('loading').classList.remove('visible');
+    document.getElementById('translate-btn').disabled = false;
+  }
+
+  function addCard() {
+    if (!pending) return;
+    if (cards.find(c => c.word.toLowerCase() === pending.word.toLowerCase())) {
+      alert('Ez a szó már szerepel a kártyáid között!');
+      return;
+    }
+    cards.push({ ...pending, learned: false, id: Date.now() });
+    save();
+    updateCount();
+    clearResult();
+    document.getElementById('word-input').value = '';
+    document.getElementById('word-input').focus();
+  }
+
+  function clearResult() {
+    pending = null;
+    document.getElementById('result-box').classList.remove('visible');
+  }
+
+  function updateCount() {
+    document.getElementById('card-count').textContent = cards.length;
+  }
+
+  function renderCards() {
+    const learned = cards.filter(c => c.learned).length;
+    document.getElementById('stat-total').textContent = cards.length;
+    document.getElementById('stat-learned').textContent = learned;
+    document.getElementById('stat-left').textContent = cards.length - learned;
+
+    const grid = document.getElementById('cards-grid');
+    if (!cards.length) {
+      grid.innerHTML = '<div class="empty"><i class="ti ti-cards"></i>Még nincs kártyád. Adj hozzá szavakat!</div>';
+      return;
+    }
+    grid.innerHTML = cards.map(c => `
+      <div class="fc-wrap">
+        <div class="fc" id="fc-${c.id}" onclick="flipCard(${c.id})">
+          <div class="front">
+            <span class="badge badge-en">angol</span>
+            <div class="fc-word">${c.word}</div>
+            <div class="fc-hint"><i class="ti ti-rotate-clockwise" style="font-size:12px"></i> kattints a fordításért</div>
+            ${c.learned ? '<div class="learned-badge"><i class="ti ti-check"></i> megtanult</div>' : ''}
+          </div>
+          <div class="back">
+            <span class="badge badge-hu">magyar</span>
+            <div class="fc-word">${c.translation}</div>
+            <div class="fc-example">${c.example}</div>
+          </div>
+        </div>
+        <button class="fc-del" onclick="deleteCard(event,${c.id})" title="Törlés"><i class="ti ti-trash"></i></button>
+      </div>
+    `).join('');
+  }
+
+  function flipCard(id) {
+    document.getElementById('fc-' + id).classList.toggle('flipped');
+  }
+
+  function deleteCard(e, id) {
+    e.stopPropagation();
+    if (!confirm('Törlöd ezt a kártyát?')) return;
+    cards = cards.filter(c => c.id !== id);
+    save(); updateCount(); renderCards();
+  }
+
+  function initPractice() {
+    if (!cards.length) {
+      document.getElementById('practice-empty').style.display = 'block';
+      document.getElementById('practice-main').style.display = 'none';
+      document.getElementById('practice-done').style.display = 'none';
+      return;
+    }
+    resetPractice();
+  }
+
+  function resetPractice() {
+    practiceQueue = [...cards].sort(() => Math.random() - 0.5);
+    practiceIndex = 0;
+    practiceFlipped = false;
+    score = { yes: 0, no: 0 };
+    document.getElementById('practice-empty').style.display = 'none';
+    document.getElementById('practice-done').style.display = 'none';
+    document.getElementById('practice-main').style.display = 'block';
+    showCard();
+  }
+
+  function showCard() {
+    if (practiceIndex >= practiceQueue.length) {
+      document.getElementById('practice-main').style.display = 'none';
+      document.getElementById('practice-done').style.display = 'block';
+      document.getElementById('done-summary').textContent =
+        `Tudtad: ${score.yes} / ${practiceQueue.length} szót.`;
+      return;
+    }
+    practiceFlipped = false;
+    const c = practiceQueue[practiceIndex];
+    document.getElementById('p-word').textContent = c.word;
+    document.getElementById('p-sub').textContent = 'kattints a fordításért';
+    document.getElementById('p-no').style.display = 'none';
+    document.getElementById('p-yes').style.display = 'none';
+    document.getElementById('practice-progress').textContent = `${practiceIndex + 1} / ${practiceQueue.length}`;
+  }
+
+  function flipPractice() {
+    if (practiceFlipped) return;
+    practiceFlipped = true;
+    const c = practiceQueue[practiceIndex];
+    document.getElementById('p-word').textContent = c.translation;
+    document.getElementById('p-sub').textContent = c.example;
+    document.getElementById('p-no').style.display = 'inline-flex';
+    document.getElementById('p-yes').style.display = 'inline-flex';
+  }
+
+  function markPractice(knew) {
+    const c = practiceQueue[practiceIndex];
+    if (knew) score.yes++; else score.no++;
+    c.learned = knew;
+    const orig = cards.find(x => x.id === c.id);
+    if (orig) orig.learned = knew;
+    save();
+    practiceIndex++;
+    showCard();
+  }
+
+  updateCount();
+</script>
+</body>
+</html>
